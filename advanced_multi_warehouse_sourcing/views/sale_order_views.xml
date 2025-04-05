@@ -24,16 +24,25 @@
                  <field name="source_warehouse_ids" widget="many2many_tags" optional="show"
                         domain="[('id', 'in', allowed_source_warehouse_ids)]"
                         options="{'no_create': True}"
-                        column_invisible="not order_website_multi_wh_enabled" <!-- Use the new related field -->
+                        column_invisible="not order_website_multi_wh_enabled"
                         />
             </xpath>
 
-              <!-- Make field editable in line form view (if needed) -->
+             <!-- Make field editable in line form view (if needed) -->
              <xpath expr="//field[@name='order_line']/form//field[@name='product_id']" position="after">
                  <!-- Use related field for invisibility -->
                  <group string="Multi-Warehouse Sourcing" name="multi_wh_line_sourcing"
                          invisible="not order_website_multi_wh_enabled">
-                     <!-- Temporarily removed all fields inside -->
+                      <!-- Removed misplaced comment from inside the tag above -->
+
+                      <!-- Add the helper field for the domain, keep it invisible -->
+                     <field name="allowed_source_warehouse_ids" invisible="1"/>
+                     <!-- Add the related field for invisible attribute, keep it invisible -->
+                     <field name="order_website_multi_wh_enabled" invisible="1"/>
+                     <field name="source_warehouse_ids" widget="many2many_tags"
+                            domain="[('id', 'in', allowed_source_warehouse_ids)]"
+                            options="{'no_create': True}"
+                             />
                  </group>
              </xpath>
 
