@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend the standard website settings form -->
+    <record id="res_config_settings_view_form_multi_warehouse" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.multi.warehouse</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Add a new block for Multi-Warehouse settings -->
+            <xpath expr="//app[@name='website']" position="inside">
+                <block title="Multi-Warehouse Fulfillment" id="website_multi_warehouse_settings">
+                    <setting string="Multi-Warehouse" help="Enable multi-warehouse fulfillment for your website orders">
+                        <field name="website_multi_wh_enabled"/>
+                        <div class="content-group" invisible="not website_multi_wh_enabled">
+                            <div class="mt16">
+                                <label for="website_default_warehouse_id" string="Default Warehouse" class="o_light_label"/>
+                                <field name="website_default_warehouse_id" class="oe_inline"/>
+                            </div>
+                            <div class="mt16">
+                                <field name="website_use_multi_wh_setting"/>
+                                <label for="website_use_multi_wh_setting" string="Enable Multi-Warehouse Delivery"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

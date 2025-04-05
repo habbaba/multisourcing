@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend the standard website settings form -->
+    <record id="res_config_settings_view_form_multi_warehouse" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.multi.warehouse</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Add a new block for Multi-Warehouse settings -->
+            <xpath expr="//app[@name='website']" position="inside">
+                <block title="Multi-Warehouse Fulfillment" id="website_multi_warehouse_settings">
+                    <setting string="Multi-Warehouse" help="Enable multi-warehouse fulfillment for your website orders">
+                        <field name="enable_multi_warehouse_for_website"/>
+                        <div class="content-group" invisible="not enable_multi_warehouse_for_website">
+                            <div class="row mt16">
+                                <label class="col-lg-4 o_light_label" string="Default Distribution Center" for="default_distribution_warehouse_id"/>
+                                <field name="default_distribution_warehouse_id"
+                                       domain="[('is_distribution_center', '=', True), '|', ('company_id', '=', False), ('company_id', '=', company_id)]"
+                                       class="col-lg-8"/>
+                            </div>
+                            <div class="mt16">
+                                <field name="website_specific_warehouse"/>
+                                <label for="website_specific_warehouse"/>
+                            </div>
+                            <div class="row mt16" invisible="not website_specific_warehouse">
+                                <label class="col-lg-4 o_light_label" string="Website" for="website_id"/>
+                                <field name="website_id" class="col-lg-8"/>
+                            </div>
+                            <div class="row mt16" invisible="not website_specific_warehouse">
+                                <label class="col-lg-4 o_light_label" string="Website Distribution Center" for="website_distribution_warehouse_id"/>
+                                <field name="website_distribution_warehouse_id"
+                                       domain="[('is_distribution_center', '=', True), '|', ('company_id', '=', False), ('company_id', '=', company_id)]"
+                                       class="col-lg-8"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

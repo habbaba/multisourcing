@@ -1,0 +1,173 @@
+<section class="container" style="font-size:20px;">
+    <h2 class="text-primary">
+		In default, odoo only allows you to select a warehouse on sale order, when the sale order is confirmed, all sale order lines will be picked up from your selected warehouse. <br/>
+		With this app, you are able to choose one or multi warehouses on the sale order line, and sale order line will be picked up from separately warehouse.
+	</h2>
+    <hr>
+
+    <p class="lead">		
+		<img src="banner_1.png" class="img-fluid d-block mx-auto"/>
+	</p>
+	<p>
+		<h3 class="bg-success text-white">List features:</h3>
+	</p>
+	<p>
+		1. Choose one warehouse on sale order line.
+	</p>
+	<p>
+		2. Choose multi warehouse on sale order line.
+	</p>
+	<p>
+		3. Automatically suggest warehouses which are sufficient stock.
+	</p>
+	<p>
+		4. Stock Picking is created separately base on warehouse on sale order line.
+	</p>
+	
+    <hr>
+		
+	<hr>
+	<p id="List-Example">
+		<h3 class="bg-success text-white">List Example:</h3>
+	</p>
+	<p class="text-info">
+		1. <a href="#Example-1" class="btn btn-outline-info text-dark">Example 1</a>: Choose one warehouse on sale order line.
+	</p>
+	<p class="text-info">
+		2. <a href="#Example-2" class="btn btn-outline-info text-dark">Example 2</a>: Multi warehouse on sale order line.
+	</p>
+	<p class="text-info">
+		3. <a href="#Example-3" class="btn btn-outline-info text-dark">Example 3</a>: Modify quantity on "Choose multi warehouse on sale order line" option.
+	</p>
+	<p class="text-info">
+		4. <a href="#Example-4" class="btn btn-outline-info text-dark">Example 4</a>: Choose sale order warehouse.
+	</p>	
+	
+	<hr><br/>
+	<p id="Example-1">
+		<h3 class="text-danger">Example 1: Choose one warehouse on sale order line</h3>
+	</p>
+	<p>
+		In sale order line, you are able to choose only one warehouse, that meaning is the product will be picked from your chose warehouse <br/>
+		In sale order, select option "Choose one warehouse on sale order line.", this is also default option, when you create order from sale order. 			
+		<img src="example/ex_1_1.png" class="img-fluid d-block mx-auto"/>		
+	</p><br/>
+	<p>	
+		For example, You have 2 warehouses
+		<img src="example/ex_1_2.png" class="img-fluid d-block mx-auto"/><br/>
+		And your available quantity of product "Desk Organizer" and "Large Cabinet" are same as below image
+		<img src="example/ex_1_3.png" class="img-fluid d-block mx-auto"/><br/>
+		<img src="example/ex_1_4.png" class="img-fluid d-block mx-auto"/><br/>
+	</p><br/>
+	<p>
+		Available quantity of product "Desk Organizer" in WH_1 is 3 and in WH_2 is 4 <br/>
+		Available quantity of product "Large Cabinet" in WH_1 is 2 and in WH_2 is 3 <br/>
+	</p><br/>
+	<p>
+		Now come back to sale order, if you select "Desk Organizer", it will suggest you should pick up stock from Warehouse 2. Because its available stock is greater than Warehouse 1.<br/>
+		<img src="example/ex_1_5.png" class="img-fluid d-block mx-auto"/><br/>
+		You are able to select another warehouse by click on warehouse and select another one.<br/>
+		<img src="example/ex_1_6.png" class="img-fluid d-block mx-auto"/><br/>
+		Select warehouse 1, if you would like to pick up stock from warehouse 1. Add "Large Cabinet" product and would like to pick up stock from warehouse 2 <br/>
+		Your completed sale order as below <br/>
+		<img src="example/ex_1_7.png" class="img-fluid d-block mx-auto"/><br/>
+	</p>
+	<p>
+		After you confirm sale order. 2 pickings will be created.<br/>
+		<img src="example/ex_1_8.png" class="img-fluid d-block mx-auto"/><br/>
+		Picking Stock details <br/>
+		<img src="example/ex_1_9.png" class="img-fluid d-block mx-auto"/><br/>
+		<img src="example/ex_1_10.png" class="img-fluid d-block mx-auto"/><br/>
+		<img src="example/ex_1_11.png" class="img-fluid d-block mx-auto"/><br/>
+	</p>
+	<p>
+		<a href="#List-Example" class="btn btn-info">Back To List Example</a>
+	</p>
+	<br/>
+	
+	<p id="Example-2">
+		<h3 class="text-danger">Example 2: Multi warehouse on sale order line</h3>
+	</p>
+	<p>
+		We have a scenario, if customer place order and you have been sufficient stock for that order but they aren't belong a warehouse. Indeed, they are in several warehouses <br/>
+		For example, you have 3 warehouses </br>
+		<img src="example/ex_2_1.png" class="img-fluid d-block mx-auto"/><br/>
+		And available quantity of "Desk Organizer" product like below image<br/>
+		<img src="example/ex_2_2.png" class="img-fluid d-block mx-auto"/><br/>
+		Warehouse 1 has 3 stocks, warehouse 2 has 4 stocks and warehouse 3 has 1 stock
+	</p>
+	<p>
+		And now, if your customer want to purchase 8 pcs of "Desk Organizer" product from your website ecommerce <br/>
+		<img src="example/ex_2_3.png" class="img-fluid d-block mx-auto"/><br/>
+	</p>
+	<p>
+		Sale Order will be created with "Choose multi warehouse on sale order line." option <br/>
+		<img src="example/ex_2_4.png" class="img-fluid d-block mx-auto"/><br/>
+		You can see "Desk Organizer" will be picked up from 3 warehouses and the number after the warehouse's name is stock number which will be picked up.
+	</p>
+	<p>
+		After customer make the payment from your website ecommerce. Sale order will be confirmed and create 3 delivery stock pickings. <br/>
+		<img src="example/ex_2_5.png" class="img-fluid d-block mx-auto"/><br/>
+		On the Sale Order form <br/>
+		<img src="example/ex_2_6.png" class="img-fluid d-block mx-auto"/> <br/>
+		List Stock Picking <br/>
+		<img src="example/ex_2_7.png" class="img-fluid d-block mx-auto"/> <br/>
+		Stock picking for warehouse 1 <br/>
+		<img src="example/ex_2_8.png" class="img-fluid d-block mx-auto"/> <br/>
+		Stock picking for warehouse 2 <br/>
+		<img src="example/ex_2_9.png" class="img-fluid d-block mx-auto"/> <br/>
+		Stock picking for warehouse 3 <br/>
+		<img src="example/ex_2_10.png" class="img-fluid d-block mx-auto"/> <br/>
+		And Sale Order Report <br/>
+		<img src="example/ex_2_11.png" class="img-fluid d-block mx-auto"/> <br/>
+	</p>
+	
+	<p>
+		<a href="#List-Example" class="btn btn-info">Back To List Example</a>
+	</p>
+	<br/>
+	
+	<p id="Example-3">
+		<h3 class="text-danger">Example 3: Modify quantity on "Choose multi warehouse on sale order line" option</h3>
+	</p>
+	<p>	When you create a new sale order, select product and input quantity, this app will suggest the warehouse which you will pick up stock<br/>
+		<img src="example/ex_3_1.png" class="img-fluid d-block mx-auto"/><br/>
+		After save sale order. it will show stock number you will pick up at the warehouse<br/>
+		<img src="example/ex_3_2.png" class="img-fluid d-block mx-auto"/><br/>
+		Click on "Warehouses" button to modify stock quantity
+		<img src="example/ex_3_3.png" class="img-fluid d-block mx-auto"/><br/>
+		For example, you want to pick up 1 stocks at the warehouse 1 and 5 stocks at the warehouse 2
+		<img src="example/ex_3_4.png" class="img-fluid d-block mx-auto"/><br/>
+		The meaning of the red line is the warehouse 2 is not sufficient stock. Click on "Save" button and sale order will be updated. <br/>
+		<img src="example/ex_3_5.png" class="img-fluid d-block mx-auto"/><br/>
+		Or you can add more warehouse.<br/>
+		<img src="example/ex_3_6.png" class="img-fluid d-block mx-auto"/><br/>
+		Click on "Save" button and sale order will be updated.<br/>
+		<img src="example/ex_3_7.png" class="img-fluid d-block mx-auto"/><br/>
+		After Confirm sale order, 3 delivery stock pickings will be created.<br/>
+		<img src="example/ex_3_8.png" class="img-fluid d-block mx-auto"/><br/>
+	</p>		
+	<p>
+		<a href="#List-Example" class="btn btn-info">Back To List Example</a>
+	</p>
+	<br/>
+
+	<p id="Example-4">
+		<h3 class="text-danger">Example 4: Choose sale order warehouse.</h3>
+	</p>	
+	<p>	
+		Select this option if you want to pick up stock from the warehouse which you selected in sale order. This option action the same as default odoo.
+		<img src="example/ex_4_1.png" class="img-fluid d-block mx-auto"/><br/>
+		<img src="example/ex_4_2.png" class="img-fluid d-block mx-auto"/><br/>
+		This meaning is all product of this sale order will be picked up from warehouse 1.
+	</p>
+	<p>
+		<a href="#List-Example" class="btn btn-info">Back To List Example</a>
+	</p>
+
+	<hr>
+	<p>
+		<h3 class="bg-success text-white">Email Support: huynh.giang.son.gs@gmail.com</h3>
+	</p>
+   
+</section>
