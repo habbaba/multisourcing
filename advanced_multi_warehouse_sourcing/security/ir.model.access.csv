@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_delete
+access_website_multi_wh_fields,access.website.multi.wh.fields,model_website,base.group_system,1,1,1,1
+access_product_template_source_wh,access.product.template.source.wh,model_product_template,base.group_user,1,1,1,1
+access_sale_order_multi_wh_flag,access.sale.order.multi.wh.flag,model_sale_order,sales_team.group_sale_salesman,1,1,1,1
+access_sale_order_line_source_wh,access.sale.order.line.source.wh,model_sale_order_line,sales_team.group_sale_salesman,1,1,1,1
+# Add access for stock admin/user if they need to see/edit these fields on products/orders
+access_product_template_source_wh_stock,access.product.template.source.wh.stock,model_product_template,stock.group_stock_manager,1,1,1,1
+access_sale_order_multi_wh_flag_stock,access.sale.order.multi.wh.flag.stock,model_sale_order,stock.group_stock_user,1,0,0,0
+access_sale_order_line_source_wh_stock,access.sale.order.line.source.wh.stock,model_sale_order_line,stock.group_stock_user,1,1,1,1

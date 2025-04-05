@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_multi_wh" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.multi.wh</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Add flag near warehouse field -->
+            <field name="warehouse_id" position="after">
+                 <field name="multi_warehouse_delivery_enabled"
+                        attrs="{'invisible': [('website_id', '!=', False), ('website_id.multi_warehouse_fulfillment_enabled', '=', False)]}"
+                        />
+            </field>
+
+            <!-- Add column to order lines tree -->
+            <xpath expr="//field[@name='order_line']/tree/field[@name='product_uom_qty']" position="after">
+                 <field name="source_warehouse_ids" widget="many2many_tags" optional="show"
+                        domain="[('id', 'in', parent.order_line.product_id.source_warehouse_ids)]"
+                        attrs="{'column_invisible': [('parent.website_id', '=', False)] or [('parent.website_id.multi_warehouse_fulfillment_enabled', '=', False)]}"
+                        />
+                        <!-- Add domain on product template allowed sources? -->
+
+            </xpath>
+
+             <!-- Make field editable in line form view (if needed) -->
+             <xpath expr="//field[@name='order_line']/form//group[@name='sale_ Mto']" position="after">
+                 <group string="Multi-Warehouse Sourcing" name="multi_wh_line_sourcing"
+                         attrs="{'invisible': [('parent.website_id', '=', False)] or [('parent.website_id.multi_warehouse_fulfillment_enabled', '=', False)]}"
+                         >
+                     <field name="source_warehouse_ids" widget="many2many_tags"
+                            domain="[('id', 'in', parent.order_line.product_id.source_warehouse_ids)]"
+                             />
+                 </group>
+             </xpath>
+        </field>
+    </record>
+</odoo>

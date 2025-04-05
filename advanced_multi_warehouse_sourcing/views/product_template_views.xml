@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_form_view_multi_wh" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.multi.wh</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="stock.view_template_property_form"/>
+        <field name="arch" type="xml">
+            <group name="traceability" position="after">
+                <group string="Multi-Warehouse Sourcing" name="multi_warehouse_sourcing">
+                     <field name="source_warehouse_ids" widget="many2many_tags"
+                            placeholder="Select warehouses..."
+                            domain="[('company_id', '=', company_id)]"/>
+                </group>
+            </group>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="product_multi_wh_selection" inherit_id="website_sale.product" name="Multi-Warehouse Selection">
+        <!-- Find a suitable place near the 'Add to Cart' button -->
+        <xpath expr="//div[@id='product_details']//a[@id='add_to_cart']" position="before">
+            <t t-if="request.website.multi_warehouse_fulfillment_enabled and product.source_warehouse_ids">
+                <div class="js_multi_wh_section mb-3">
+                    <h5>Source From:</h5>
+                     <t t-foreach="product.source_warehouse_ids.sorted(key=lambda w: w.name)" t-as="warehouse">
+                        <div class="form-check">
+                            <input class="form-check-input o_wsale_source_wh_input" type="checkbox"
+                                   t-att-value="warehouse.id"
+                                   name="source_warehouse_ids"
+                                   t-att-id="'source_wh_%s' % warehouse.id"/>
+                            <label class="form-check-label" t-att-for="'source_wh_%s' % warehouse.id">
+                                <t t-esc="warehouse.name"/>
+                                <!-- Optional: Show stock level? Needs performance consideration -->
+                                <!-- <span class="text-muted">(Available: <t t-esc="product.with_context(warehouse=warehouse.id).virtual_available"/>)</span> -->
+                            </label>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>
