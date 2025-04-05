@@ -16,6 +16,21 @@ class SaleOrderLine(models.Model):
         help="Warehouses selected (e.g., via website or manually) to source this specific line item."
     )
 
+    allowed_source_warehouse_ids = fields.Many2many(
+        'stock.warehouse',
+        compute='_compute_allowed_source_warehouse_ids',
+        string="Allowed Source Warehouses (Domain Helper)",
+        help="Technical field for UI domain, listing warehouses from the product template.",
+    )
+
+    @api.depends('product_id', 'product_id.source_warehouse_ids')
+    def _compute_allowed_source_warehouse_ids(self):
+        for line in self:
+            if line.product_id:
+                line.allowed_source_warehouse_ids = line.product_id.source_warehouse_ids
+            else:
+                line.allowed_source_warehouse_ids = False  # Or self.env['stock.warehouse']
+
     # Override the method responsible for triggering procurement for the line
     def _action_launch_stock_rule(self, previous_product_uom_qty=False):
         """
