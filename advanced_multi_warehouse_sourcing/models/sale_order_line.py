@@ -95,154 +95,218 @@ class SaleOrderLine(models.Model):
         # Since we create moves directly, returning True might suffice. Check Odoo source if issues arise.
         return True # Assuming True indicates processing occurred
 
-    def _get_moves_from_sources(self, line, qty_needed, sources, location_dest_id, picking_type_id, main_warehouse_id):
-        """ Helper to create moves by checking availability in sources """
-        StockMove = self.env['stock.move']
+    def _calculate_source_quantities(self, line, qty_needed, sources):
+        """
+        Calculates the quantity to pull from each source warehouse based on availability.
+
+        :param line: The sale.order.line record
+        :param qty_needed: The total float quantity needed for the line product.
+        :param sources: A recordset of stock.warehouse records selected as sources.
+        :return: A tuple: (dict {wh.id: qty_to_pull}, float shortfall_qty)
+                 The dict maps warehouse IDs to the float quantity to pull from them.
+                 shortfall_qty is the quantity still needed after checking all sources.
+        """
         StockQuant = self.env['stock.quant']
-        moves_vals_list = []
+        qty_to_pull_map = defaultdict(float)
+        availability_map = {}
         qty_remaining = qty_needed
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
 
-        _logger.info(f"Line {line.id}: Creating moves. Need {qty_needed}. Sources: {sources.ids}. Dest: {location_dest_id}. PickingType: {picking_type_id}. MainWH: {main_warehouse_id}")
-
-        # Simple sequential check - could be enhanced (proportional, etc.)
+        # 1. Check availability in all sources first
         for source_wh in sources:
-            if qty_remaining <= 0:
-                break
-
             source_location = source_wh.lot_stock_id
             if not source_location:
-                _logger.warning(f"Skipping source WH {source_wh.name} - no stock location configured.")
+                _logger.warning(f"Line {line.id}: Skipping source WH {source_wh.name} - no stock location configured.")
+                availability_map[source_wh.id] = 0.0
                 continue
 
             available_qty = StockQuant._get_available_quantity(
                 line.product_id,
                 source_location,
-                strict=False # Allow negative, reservation will handle later
+                strict=False # Consider actual reservation strategy later if needed
             )
-            _logger.info(f"Line {line.id}: Source {source_wh.name} ({source_location.name}) has {available_qty} available of {line.product_id.name}")
+            availability_map[source_wh.id] = available_qty
+            _logger.info(f"Line {line.id}: Source {source_wh.name} ({source_location.name}) has {available_qty:.{precision}f} available of {line.product_id.name}")
 
+        # 2. Distribute the pull based on availability (simple sequential fill strategy)
+        #    Sort sources for consistent behavior (e.g., by ID or name)
+        sorted_sources = sources.sorted(key=lambda w: w.id)
 
-            qty_to_take = min(qty_remaining, max(0, available_qty)) # Take available, up to remaining need
+        for source_wh in sorted_sources:
+            if qty_remaining <= 1e-9: # Use tolerance for float comparison
+                break
 
-            if qty_to_take > 0:
-                move_vals = {
-                    'name': line.name,
-                    'product_id': line.product_id.id,
-                    'product_uom_qty': qty_to_take,
-                    'product_uom': line.product_uom.id,
-                    'location_id': source_location.id,
-                    'location_dest_id': location_dest_id,
-                    'origin': line.order_id.name,
-                    'sale_line_id': line.id,
-                    'picking_type_id': picking_type_id,
-                    'warehouse_id': main_warehouse_id, # The WH governing the picking type
-                    'group_id': line.order_id.procurement_group_id.id if line.order_id.procurement_group_id else False,
-                    'propagate_cancel': line.propagate_cancel,
-                }
-                moves_vals_list.append(move_vals)
-                qty_remaining -= qty_to_take
-                _logger.info(f"Line {line.id}: Planning to take {qty_to_take} from {source_wh.name}. Remaining need: {qty_remaining}")
+            available = availability_map.get(source_wh.id, 0.0)
+            if available <= 0:
+                continue
 
-        if qty_remaining > 0:
-             _logger.warning(f"Line {line.id}: Could not fulfill full quantity {qty_needed}. Short by {qty_remaining} from selected sources {sources.ids}.")
-             # Consider raising UserError or creating a note on SO? Or let standard rules potentially handle shortfall?
-             # Current logic creates moves for available qty only.
+            # Determine qty to take from this source
+            qty_to_take = min(available, qty_remaining)
 
-        if moves_vals_list:
-            created_moves = StockMove.sudo().create(moves_vals_list) # Use sudo if permission issues arise
-            # Confirm moves to create pickings and trigger reservations
-            created_moves._action_confirm()
-            created_moves._action_assign()
-            _logger.info(f"Line {line.id}: Created and confirmed/assigned moves: {created_moves.ids}")
-        else:
-             _logger.warning(f"Line {line.id}: No moves created for qty {qty_needed} from sources {sources.ids}.")
+            if qty_to_take > 1e-9: # Use tolerance
+                 qty_to_pull_map[source_wh.id] += qty_to_take # Use += in case WH appears twice? Unlikely but safe.
+                 qty_remaining -= qty_to_take
+                 _logger.info(f"Line {line.id}: Planning to take {qty_to_take:.{precision}f} from {source_wh.name}. Remaining need: {qty_remaining:.{precision}f}")
 
+        shortfall = max(0.0, qty_remaining)
+        if shortfall > 1e-9:
+             _logger.warning(f"Line {line.id}: Could not fulfill full quantity {qty_needed:.{precision}f}. Shortfall: {shortfall:.{precision}f} from sources {sources.ids}.")
+
+        return dict(qty_to_pull_map), shortfall
 
     def _create_direct_delivery_moves(self, line, qty_to_fulfill):
         """ Scenario A: Create direct delivery moves from each source WH """
+        StockMove = self.env['stock.move']
         customer_location = line.order_id.partner_shipping_id.property_stock_customer
-        moves_created = False
+        moves_vals_list = []
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
 
-        # Group moves by source warehouse to use correct picking type
-        source_wh_groups = defaultdict(lambda: self.env['stock.warehouse'])
-        for wh in line.source_warehouse_ids:
-            source_wh_groups[wh] |= wh # Using defaultdict might not be needed if just iterating
+        if not line.source_warehouse_ids:
+            _logger.warning(f"Line {line.id}: Scenario A called but no source warehouses selected.")
+            return
 
-        for source_wh in line.source_warehouse_ids:
-             # Find the OUT picking type for this specific source warehouse
-             picking_type = self.env['stock.picking.type'].search([
-                 ('code', '=', 'outgoing'),
-                 ('warehouse_id', '=', source_wh.id)
-             ], limit=1)
-             if not picking_type:
-                 _logger.error(f"No 'Delivery Orders' picking type found for warehouse {source_wh.name}. Cannot create direct delivery for line {line.id}.")
-                 continue # Or raise UserError
+        # Calculate how much to pull from each source
+        qty_to_pull_map, shortfall = self._calculate_source_quantities(line, qty_to_fulfill, line.source_warehouse_ids)
 
-             # Re-calculate needed qty for THIS warehouse if splitting proportionally?
-             # For now, let _get_moves_from_sources handle availability check sequentially.
-             # A potential improvement: calculate proportions first.
-             self._get_moves_from_sources(
-                 line,
-                 qty_to_fulfill, # Pass total needed, let helper check available per source
-                 source_wh, # Pass only the current source WH
-                 customer_location.id,
-                 picking_type.id,
-                 source_wh.id # Delivery is governed by the source WH
-             )
-             # Note: This sequential call to _get_moves_from_sources needs refinement
-             # if you want proportional split rather than sequential depletion.
-             # Currently, it tries to get the *full* qty_to_fulfill from the *first* WH,
-             # then the remaining from the second, etc. This needs fixing.
+        if not qty_to_pull_map:
+            _logger.warning(f"Line {line.id}: No available stock found in any selected source for Scenario A.")
+            # Handle shortfall maybe by logging or creating a note? Or let standard rules try?
+            # For now, we just log in _calculate_source_quantities
+            return
 
-        # ***** Correction Needed for Proportional/Split Logic in Scenario A *****
-        # The current loop calls _get_moves_from_sources incorrectly for Scenario A.
-        # It should determine the total qty per source WH *first*, then create moves.
-        # Let's simplify and call it ONCE with ALL sources, relying on its internal loop:
-        _logger.warning("Scenario A move creation needs review for proportional split logic.")
-        # Find a generic OUT picking type (maybe doesn't matter as much if moves split pickings?)
-        # This part is tricky - how Odoo groups moves into pickings depends on more factors.
-        # For simplicity here, let's assume moves from different WHs WILL create different pickings.
-        # We need a dummy picking type maybe? Or find one for the main order WH? Let's try main WH OUT type.
-        main_picking_type = line.order_id.warehouse_id.out_type_id
-        if not main_picking_type:
-             raise UserError(_("Default warehouse %s of SO %s has no Delivery Order Operation Type.", line.order_id.warehouse_id.name, line.order_id.name))
+        # Create one move per source warehouse that has quantity assigned
+        for wh_id, qty_to_pull in qty_to_pull_map.items():
+            if qty_to_pull <= 1e-9:  # Use tolerance
+                continue
 
-        self._get_moves_from_sources(
-             line,
-             qty_to_fulfill,
-             line.source_warehouse_ids, # Pass all selected sources
-             customer_location.id,
-             main_picking_type.id, # Use main WH type - Odoo might regroup later
-             line.order_id.warehouse_id.id # Governed by main WH? Test this assumption.
-         )
+            source_wh = self.env['stock.warehouse'].browse(wh_id)
+            source_location = source_wh.lot_stock_id
+            # Use the specific OUT picking type for THIS source warehouse
+            picking_type = source_wh.out_type_id
+            if not picking_type:
+                _logger.error(
+                    f"No 'Delivery Orders' picking type found for source warehouse {source_wh.name}. Cannot create direct delivery move for line {line.id}.")
+                # Consider raising UserError or skipping this source
+                continue
+            if not source_location:
+                _logger.error(
+                    f"No stock location found for source warehouse {source_wh.name}. Cannot create direct delivery move for line {line.id}.")
+                continue
 
+            move_vals = {
+                'name': line.name,
+                'product_id': line.product_id.id,
+                'product_uom_qty': qty_to_pull,
+                'product_uom': line.product_uom.id,
+                'location_id': source_location.id,
+                'location_dest_id': customer_location.id,
+                'origin': line.order_id.name,
+                'sale_line_id': line.id,
+                'picking_type_id': picking_type.id,
+                'warehouse_id': source_wh.id,  # Move governed by the source WH
+                'group_id': line.order_id.procurement_group_id.id if line.order_id.procurement_group_id else False,
+                'propagate_cancel': line.propagate_cancel,
+                'company_id': line.company_id.id,  # Ensure company is set
+            }
+            moves_vals_list.append(move_vals)
+            _logger.info(
+                f"Line {line.id}: Prepared direct delivery move vals: {qty_to_pull:.{precision}f} from WH {source_wh.name} ({source_location.name}) using picking type {picking_type.name}")
+
+        if moves_vals_list:
+            try:
+                created_moves = StockMove.sudo().create(moves_vals_list)
+                # Confirm moves to create pickings (should group by WH/partner/picking_type) and trigger reservations
+                created_moves._action_confirm()
+                created_moves._action_assign()  # Try to reserve
+                _logger.info(f"Line {line.id}: Created Scenario A moves: {created_moves.ids}")
+            except Exception as e:
+                _logger.error(f"Line {line.id}: Error creating/confirming Scenario A moves: {e}", exc_info=True)
+                # Consider raising UserError to rollback transaction
+                raise UserError(_("Failed to create direct delivery moves for line %s. Error: %s") % (line.name, e))
+        # If there was a shortfall, it was logged by _calculate_source_quantities
 
     def _create_internal_transfer_moves(self, line, qty_to_fulfill, collect_wh):
         """ Scenario B: Create internal transfer moves to the collection WH """
-        collect_location = collect_wh.lot_stock_id # Or wh.wh_input_stock_loc_id ? Check routes. Default stock loc is common.
-        if not collect_location:
-            raise UserError(_("Collection Warehouse '%s' does not have a default Stock Location configured.", collect_wh.name))
+        StockMove = self.env['stock.move']
+        moves_vals_list = []
+        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
 
-        # Find the INT picking type for the collection warehouse (transfers often belong to dest WH)
+        if not line.source_warehouse_ids:
+            _logger.warning(f"Line {line.id}: Scenario B called but no source warehouses selected.")
+            return
+        if not collect_wh:
+            _logger.error(f"Line {line.id}: Scenario B called but no collection warehouse provided.")
+            # This should have been caught earlier, but double-check
+            raise UserError(_("Cannot create internal transfers without a destination Collection Warehouse."))
+
+        # Determine destination location and picking type for the collection WH
+        collect_location = collect_wh.lot_stock_id  # Assume default stock loc for simplicity
+        if not collect_location:
+            raise UserError(
+                _("Collection Warehouse '%s' does not have a default Stock Location configured.", collect_wh.name))
+
+        # Find the INT picking type for the collection warehouse
         picking_type = self.env['stock.picking.type'].search([
             ('code', '=', 'internal'),
             ('warehouse_id', '=', collect_wh.id),
-            ('default_location_dest_id', '=', collect_location.id) # Be more specific if possible
+            # ('default_location_dest_id', '=', collect_location.id) # This might be too restrictive
         ], limit=1)
         if not picking_type:
-             # Fallback search
-             picking_type = self.env['stock.picking.type'].search([
-                 ('code', '=', 'internal'),
-                 ('warehouse_id', '=', collect_wh.id),
-             ], limit=1)
-        if not picking_type:
-            raise UserError(_("No suitable 'Internal Transfer' picking type found for collection warehouse '%s'.", collect_wh.name))
+            raise UserError(
+                _("No 'Internal Transfer' picking type found for collection warehouse '%s'.", collect_wh.name))
 
-        self._get_moves_from_sources(
-            line,
-            qty_to_fulfill,
-            line.source_warehouse_ids, # All selected sources
-            collect_location.id,
-            picking_type.id,
-            collect_wh.id # Internal Transfer governed by the destination WH
-        )
+        # Calculate how much to pull from each source
+        qty_to_pull_map, shortfall = self._calculate_source_quantities(line, qty_to_fulfill, line.source_warehouse_ids)
+
+        if not qty_to_pull_map:
+            _logger.warning(f"Line {line.id}: No available stock found in any selected source for Scenario B.")
+            # If no stock, no transfers are made. Standard rule will run later but likely fail/wait.
+            # Shortfall logged by _calculate_source_quantities
+            return
+
+        # Create one move per source warehouse that has quantity assigned
+        for wh_id, qty_to_pull in qty_to_pull_map.items():
+            if qty_to_pull <= 1e-9:  # Use tolerance
+                continue
+
+            source_wh = self.env['stock.warehouse'].browse(wh_id)
+            source_location = source_wh.lot_stock_id
+            if not source_location:
+                _logger.error(
+                    f"No stock location found for source warehouse {source_wh.name}. Cannot create internal transfer move for line {line.id}.")
+                continue  # Skip this source
+
+            move_vals = {
+                'name': line.name,
+                'product_id': line.product_id.id,
+                'product_uom_qty': qty_to_pull,
+                'product_uom': line.product_uom.id,
+                'location_id': source_location.id,  # Source varies
+                'location_dest_id': collect_location.id,  # Destination is fixed
+                'origin': line.order_id.name,
+                'sale_line_id': line.id,  # Link back to SO line
+                'picking_type_id': picking_type.id,  # Use the INT type of collect WH
+                'warehouse_id': collect_wh.id,  # Internal Transfer governed by the destination WH
+                'group_id': line.order_id.procurement_group_id.id if line.order_id.procurement_group_id else False,
+                'propagate_cancel': line.propagate_cancel,
+                'company_id': line.company_id.id,  # Ensure company is set
+            }
+            moves_vals_list.append(move_vals)
+            _logger.info(
+                f"Line {line.id}: Prepared internal transfer move vals: {qty_to_pull:.{precision}f} from WH {source_wh.name} ({source_location.name}) to WH {collect_wh.name} ({collect_location.name}) using picking type {picking_type.name}")
+
+        if moves_vals_list:
+            try:
+                created_moves = StockMove.sudo().create(moves_vals_list)
+                # Confirm moves to create Internal Transfer picking(s) and trigger reservations if possible
+                created_moves._action_confirm()
+                created_moves._action_assign()  # Try to reserve source stock
+                _logger.info(f"Line {line.id}: Created Scenario B internal transfer moves: {created_moves.ids}")
+            except Exception as e:
+                _logger.error(f"Line {line.id}: Error creating/confirming Scenario B internal transfer moves: {e}",
+                              exc_info=True)
+                # Consider raising UserError to rollback transaction
+                raise UserError(_("Failed to create internal transfer moves for line %s. Error: %s") % (line.name, e))
+
+        # If there was a shortfall, it was logged by _calculate_source_quantities
+        # The standard rule launched later for this line will handle the demand in the collect_wh
