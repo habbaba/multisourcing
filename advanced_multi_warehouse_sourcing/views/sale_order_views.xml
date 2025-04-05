@@ -1,51 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_order_form_multi_wh" model="ir.ui.view">
-        <field name="name">sale.order.form.inherit.multi.wh</field>
-        <field name="model">sale.order</field>
-        <field name="inherit_id" ref="sale.view_order_form"/>
+    <record id="product_template_form_view_multi_wh" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.multi.wh</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="stock.view_template_property_form"/>
         <field name="arch" type="xml">
-
-            <!-- **** TEMPORARILY COMMENTED OUT FOR DEBUGGING **** -->
-            <!--
-            <field name="warehouse_id" position="after">
-                 <field name="multi_warehouse_delivery_enabled"
-                        invisible="not website_id or not website_id.multi_warehouse_fulfillment_enabled"
-                        />
-            </field>
-            -->
-
-            <!-- Add column to order lines tree -->
-            <xpath expr="//field[@name='order_line']/tree/field[@name='product_uom_qty']" position="after">
-                 <!-- Add the helper field for the domain, keep it invisible -->
-                 <field name="allowed_source_warehouse_ids" invisible="1"/>
-                 <!-- Add the related field for column_invisible, keep it invisible -->
-                 <field name="order_website_multi_wh_enabled" invisible="1"/>
-                 <field name="source_warehouse_ids" widget="many2many_tags" optional="show"
-                        domain="[('id', 'in', allowed_source_warehouse_ids)]"
-                        options="{'no_create': True}"
-                        column_invisible="not order_website_multi_wh_enabled"
-                        />
-            </xpath>
-
-             <!-- Make field editable in line form view (if needed) -->
-             <xpath expr="//field[@name='order_line']/form//field[@name='product_id']" position="after">
-                 <!-- Use related field for invisibility -->
-                 <group string="Multi-Warehouse Sourcing" name="multi_wh_line_sourcing"
-                         invisible="not order_website_multi_wh_enabled">
-                      <!-- Removed misplaced comment from inside the tag above -->
-
-                      <!-- Add the helper field for the domain, keep it invisible -->
-                     <field name="allowed_source_warehouse_ids" invisible="1"/>
-                     <!-- Add the related field for invisible attribute, keep it invisible -->
-                     <field name="order_website_multi_wh_enabled" invisible="1"/>
+            <group name="traceability" position="after">
+                <group string="Multi-Warehouse Sourcing" name="multi_warehouse_sourcing">
                      <field name="source_warehouse_ids" widget="many2many_tags"
-                            domain="[('id', 'in', allowed_source_warehouse_ids)]"
-                            options="{'no_create': True}"
-                             />
-                 </group>
-             </xpath>
-
+                            placeholder="Select warehouses..."
+                            domain="[('company_id', '=', company_id)]"/>
+                </group>
+            </group>
         </field>
     </record>
 </odoo>
