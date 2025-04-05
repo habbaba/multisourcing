@@ -1,4 +1,4 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_delete
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_website_multi_wh_fields,access.website.multi.wh.fields,model_website,base.group_system,1,1,1,1
 access_product_template_source_wh,access.product.template.source.wh,model_product_template,base.group_user,1,1,1,1
 access_sale_order_multi_wh_flag,access.sale.order.multi.wh.flag,model_sale_order,sales_team.group_sale_salesman,1,1,1,1
