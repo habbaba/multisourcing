@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_order_line_warehouse_manager,access.order.line.warehouse.manager,model_sale_order_line_warehouse,sales_team.group_sale_manager,1,1,1,1
+access_order_line_warehouse_salesman,access.order.line.warehouse.salesman,model_sale_order_line_warehouse,sales_team.group_sale_salesman,1,1,1,1
+access_short_order_line_warehouse_manager,access.short.order.line.warehouse.manager,model_short_order_line_warehouse,sales_team.group_sale_manager,1,1,1,1
+access_short_order_line_warehouse_salesman,access.short.order.line.warehouse.salesman,model_short_order_line_warehouse,sales_team.group_sale_salesman,1,1,1,1
