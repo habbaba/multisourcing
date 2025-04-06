@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_warehouse_multi_ecommerce_form" model="ir.ui.view">
+        <field name="name">stock.warehouse.ecommerce.form</field>
+        <field name="model">stock.warehouse</field>
+        <field name="inherit_id" ref="stock.view_warehouse"/>
+        <field name="arch" type="xml">
+            <field name="code" position="after">
+                <field name="is_ecommerce_source"/>
+                <field name="is_distribution_center"/>
+                <field name="ecommerce_priority" invisible="not is_ecommerce_source"/>
+                <field name="delivery_route_id" invisible="not is_distribution_center"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_warehouse_multi_ecommerce_tree" model="ir.ui.view">
+        <field name="name">stock.warehouse.ecommerce.tree</field>
+        <field name="model">stock.warehouse</field>
+        <field name="inherit_id" ref="stock.view_warehouse_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="is_ecommerce_source"/>
+                <field name="is_distribution_center"/>
+                <field name="ecommerce_priority"/>
+                <field name="delivery_route_id"/>
+            </field>
+        </field>
+    </record>
+</odoo>
